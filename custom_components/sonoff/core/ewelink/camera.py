@@ -105,17 +105,14 @@ class XCameras(Thread):
             # log.debug(f"Response from unknown address: {addr}")
             return
 
-        if cmd != 0xE0:
+        if cmd == 0xD0:
             device.last_time = time.time()
 
-        if cmd == 0xD0:
             data = bytes.fromhex(CMD_DATA_ACK) + data[6:8]
             self.sendto(data, device)
 
-        elif cmd == 0xE0:
-            # TODO:
-            # self.sendto(CMD_PONG, device)
-            pass
+        elif cmd != 0xE0:
+            device.last_time = time.time()
 
         if device.wait_data == cmd:
             if cmd != 0xD1 or device.wait_sequence == data[8:10]:

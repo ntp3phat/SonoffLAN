@@ -84,7 +84,7 @@ def spec(cls, base: str = None, enabled: bool = None, **kwargs) -> type:
     if base:
         bases = cls.__mro__[-len(XSwitch.__mro__) :: -1]
         bases = {k: v for b in bases for k, v in b.__dict__.items()}
-        return type(cls.__name__, DEVICE_CLASS[base], {**bases, **kwargs})
+        return type(cls.__name__, DEVICE_CLASS[base], bases | kwargs)
     return type(cls.__name__, (cls,), {**cls.__dict__, **kwargs})
 
 

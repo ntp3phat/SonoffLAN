@@ -72,7 +72,7 @@ class SonoffLANFlowHandler(ConfigFlow, domain=DOMAIN):
                         "user",
                         schema,
                         data,
-                        template={"error": "Token: " + self.cloud.token},
+                        template={"error": f"Token: {self.cloud.token}"},
                     )
 
                 if username and password:

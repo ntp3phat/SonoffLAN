@@ -89,8 +89,7 @@ class XSensor(XEntity, SensorEntity):
 
         XEntity.__init__(self, ewelink, device)
 
-        reporting = device.get("reporting", {}).get(self.uid)
-        if reporting:
+        if reporting := device.get("reporting", {}).get(self.uid):
             self.report_mint, self.report_maxt, self.report_delta = reporting
             self.report_ts = time.time()
             self._attr_should_poll = True
@@ -207,9 +206,7 @@ class XEnergySensor(XEntity, SensorEntity):
         self._attr_native_value = history[0]
 
         if self.report_history:
-            self._attr_extra_state_attributes = {
-                "history": history[0 : self.report_history]
-            }
+            self._attr_extra_state_attributes = {"history": history[:self.report_history]}
 
     async def async_update(self):
         ts = time.time()
