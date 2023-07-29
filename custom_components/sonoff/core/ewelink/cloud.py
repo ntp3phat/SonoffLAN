@@ -104,7 +104,7 @@ class XRegistryCloud(ResponseWaiter, XRegistryBase):
 
     @property
     def token(self) -> str:
-        return self.region + ":" + self.auth["at"]
+        return f"{self.region}:" + self.auth["at"]
 
     async def login(self, username: str, password: str, app=0) -> bool:
         if username == "token":
@@ -121,7 +121,7 @@ class XRegistryCloud(ResponseWaiter, XRegistryBase):
         elif username.startswith("+"):
             payload["phoneNumber"] = username
         else:
-            payload["phoneNumber"] = "+" + username
+            payload["phoneNumber"] = f"+{username}"
 
         appid, appsecret = APP[app]
 
@@ -130,12 +130,12 @@ class XRegistryCloud(ResponseWaiter, XRegistryBase):
         hex_dig = hmac.new(appsecret.encode(), data, hashlib.sha256).digest()
 
         headers = {
-            "Authorization": "Sign " + base64.b64encode(hex_dig).decode(),
+            "Authorization": f"Sign {base64.b64encode(hex_dig).decode()}",
             "Content-Type": "application/json",
             "X-CK-Appid": appid,
         }
         r = await self.session.post(
-            self.host + "/v2/user/login", data=data, headers=headers, timeout=30
+            f"{self.host}/v2/user/login", data=data, headers=headers, timeout=30
         )
         resp = await r.json()
 
@@ -143,7 +143,10 @@ class XRegistryCloud(ResponseWaiter, XRegistryBase):
         if resp["error"] == 10004:
             self.region = resp["data"]["region"]
             r = await self.session.post(
-                self.host + "/v2/user/login", data=data, headers=headers, timeout=30
+                f"{self.host}/v2/user/login",
+                data=data,
+                headers=headers,
+                timeout=30,
             )
             resp = await r.json()
 
@@ -157,9 +160,9 @@ class XRegistryCloud(ResponseWaiter, XRegistryBase):
 
     async def login_token(self, token: str, app: int = 0) -> bool:
         appid = APP[app][0]
-        headers = {"Authorization": "Bearer " + token, "X-CK-Appid": appid}
+        headers = {"Authorization": f"Bearer {token}", "X-CK-Appid": appid}
         r = await self.session.get(
-            self.host + "/v2/user/profile", headers=headers, timeout=30
+            f"{self.host}/v2/user/profile", headers=headers, timeout=30
         )
         resp = await r.json()
         if resp["error"] != 0:
@@ -173,7 +176,7 @@ class XRegistryCloud(ResponseWaiter, XRegistryBase):
 
     async def get_homes(self) -> dict:
         r = await self.session.get(
-            self.host + "/v2/family", headers=self.headers, timeout=30
+            f"{self.host}/v2/family", headers=self.headers, timeout=30
         )
         resp = await r.json()
         return {i["id"]: i["name"] for i in resp["data"]["familyList"]}
@@ -182,7 +185,7 @@ class XRegistryCloud(ResponseWaiter, XRegistryBase):
         devices = []
         for home in homes or [None]:
             r = await self.session.get(
-                self.host + "/v2/device/thing",
+                f"{self.host}/v2/device/thing",
                 headers=self.headers,
                 timeout=30,
                 params={"num": 0, "familyid": home} if home else {"num": 0},
@@ -346,17 +349,9 @@ class XRegistryCloud(ResponseWaiter, XRegistryBase):
             elif data["error"] != 0:
                 _LOGGER.warning(f"Cloud ERROR: {data}")
 
-        elif data["action"] == "update":
+        elif data["action"] in ["update", "sysmsg"]:
             # new state from device
             self.dispatcher_send(SIGNAL_UPDATE, data)
 
-        elif data["action"] == "sysmsg":
-            # changed device online status
-            self.dispatcher_send(SIGNAL_UPDATE, data)
-
-        elif data["action"] == "reportSubDevice":
-            # nothing useful: https://github.com/AlexxIT/SonoffLAN/issues/767
-            pass
-
-        else:
+        elif data["action"] != "reportSubDevice":
             _LOGGER.warning(f"UNKNOWN cloud msg: {data}")

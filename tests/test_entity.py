@@ -97,12 +97,12 @@ def test_simple_switch():
     assert switch.state == "on"
 
     led: XToggle = next(e for e in entities if e.uid == "led")
-    assert led.unique_id == DEVICEID + "_led"
+    assert led.unique_id == f"{DEVICEID}_led"
     assert led.state == "on"
     assert led.entity_registry_enabled_default is False
 
     rssi: XSensor = next(e for e in entities if e.uid == "rssi")
-    assert rssi.unique_id == DEVICEID + "_rssi"
+    assert rssi.unique_id == f"{DEVICEID}_rssi"
     assert rssi.native_value == -39
     assert rssi.entity_registry_enabled_default is False
 
@@ -161,12 +161,12 @@ def test_switch_2ch():
 
     switch1: XSwitch = entities[0]
     assert switch1.name == "Channel A"
-    assert switch1.unique_id == DEVICEID + "_1"
+    assert switch1.unique_id == f"{DEVICEID}_1"
     assert switch1.state == "on"
 
     switch2: XSwitch = entities[1]
     assert switch2.name == "Channel B"
-    assert switch2.unique_id == DEVICEID + "_2"
+    assert switch2.unique_id == f"{DEVICEID}_2"
     assert switch2.state == "off"
 
     switch2.ewelink.cloud.dispatcher_send(
@@ -436,7 +436,7 @@ def test_dual_r3():
     energy_2: XEnergySensorDualR3 = next(e for e in entities if e.uid == "energy_2")
     energy_2.internal_update({"kwhHistories_01": "0201000000000000"})
     assert energy_2.state == 2.01
-    assert energy_2.extra_state_attributes == None
+    assert energy_2.extra_state_attributes is None
 
 
 def test_diffuser():

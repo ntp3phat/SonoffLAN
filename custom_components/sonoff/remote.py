@@ -46,7 +46,7 @@ def rfbridge_childs(remotes: list, config: dict = None):
 
             # everride child params from YAML
             if config and child["name"] in config:
-                child.update(config[child["name"]])
+                child |= config[child["name"]]
 
                 if "payload_off" in child:
                     duals[channel] = child["payload_off"]
@@ -64,7 +64,7 @@ def rfbridge_childs(remotes: list, config: dict = None):
         try:
             ch_off = next(k for k, v in childs.items() if v["name"] == name)
         except StopIteration:
-            _LOGGER.warning("Can't find payload_off: " + name)
+            _LOGGER.warning(f"Can't find payload_off: {name}")
             continue
         # move off channel to end of the dict
         childs[ch_off] = childs.pop(ch_off)

@@ -293,7 +293,7 @@ async def internal_cache_setup(
     if mode != "cloud":
         registry.local.start(await zeroconf.async_get_instance(hass))
 
-    _LOGGER.debug(mode.upper() + " mode start")
+    _LOGGER.debug(f"{mode.upper()} mode start")
 
     # at this moment we hold EVENT_HOMEASSISTANT_START event, because run this
     # coro with `hass.async_create_task` from `async_setup_entry`

@@ -25,11 +25,8 @@ async def async_setup_entry(hass, config_entry, add_entities):
 
 def conv(value: int, a1: int, a2: int, b1: int, b2: int) -> int:
     value = round((value - a1) / (a2 - a1) * (b2 - b1) + b1)
-    if value < min(b1, b2):
-        value = min(b1, b2)
-    if value > max(b1, b2):
-        value = max(b1, b2)
-    return value
+    value = max(value, min(b1, b2))
+    return min(value, max(b1, b2))
 
 
 ###############################################################################
@@ -206,15 +203,8 @@ class XLightB1(XLight):
 
         if "zyx_mode" in params:
             mode = params["zyx_mode"]  # 1-6
-            if mode == 1:
-                self._attr_color_mode = COLOR_MODE_COLOR_TEMP
-            else:
-                self._attr_color_mode = COLOR_MODE_RGB
-            if mode >= 3:
-                self._attr_effect = self.effect_list[mode - 3]
-            else:
-                self._attr_effect = None
-
+            self._attr_color_mode = COLOR_MODE_COLOR_TEMP if mode == 1 else COLOR_MODE_RGB
+            self._attr_effect = self.effect_list[mode - 3] if mode >= 3 else None
         if self.color_mode == COLOR_MODE_COLOR_TEMP:
             # from 25 to 255
             cold = int(params["channel0"])
@@ -241,9 +231,7 @@ class XLightB1(XLight):
                 color_temp = self.color_temp
             if color_temp == 1:
                 params = {"channel0": ch, "channel1": "0"}
-            elif color_temp == 2:
-                params = {"channel0": ch, "channel1": ch}
-            elif color_temp == 3:
+            elif color_temp in [2, 3]:
                 params = {"channel0": ch, "channel1": ch}
             else:
                 raise NotImplementedError
@@ -302,7 +290,7 @@ class XLightL1(XLight):
 
         if "bright" in params:
             self._attr_brightness = conv(params["bright"], 1, 100, 1, 255)
-        if "colorR" in params and "colorG" in params and "colorB":
+        if "colorR" in params and "colorG" in params:
             self._attr_rgb_color = (
                 params["colorR"],
                 params["colorG"],
@@ -322,14 +310,12 @@ class XLightL1(XLight):
             if brightness:
                 params["bright"] = conv(brightness, 1, 255, 1, 100)
             if rgb_color:
-                params.update(
-                    {
-                        "colorR": rgb_color[0],
-                        "colorG": rgb_color[1],
-                        "colorB": rgb_color[2],
-                        "light_type": 1,
-                    }
-                )
+                params |= {
+                    "colorR": rgb_color[0],
+                    "colorG": rgb_color[1],
+                    "colorB": rgb_color[2],
+                    "light_type": 1,
+                }
             return params
 
 
@@ -742,11 +728,11 @@ class XLightB02(XLight):
 
         model = device.get("productModel")
         if model == "B02-F-ST64":
-            self._attr_max_mireds = int(1000000 / 1800)  # 555
-            self._attr_min_mireds = int(1000000 / 5000)  # 200
+            self._attr_max_mireds = 1000000 // 1800
+            self._attr_min_mireds = 1000000 // 5000
         elif model == "QMS-2C-CW":
-            self._attr_max_mireds = int(1000000 / 2700)  # 370
-            self._attr_min_mireds = int(1000000 / 6500)  # 153
+            self._attr_max_mireds = 1000000 // 2700
+            self._attr_min_mireds = 1000000 // 6500
 
     def set_state(self, params: dict):
         XLight.set_state(self, params)
@@ -899,12 +885,11 @@ class XLightGroup(XEntity, LightEntity):
     _attr_supported_color_modes = {COLOR_MODE_BRIGHTNESS}
 
     def set_state(self, params: dict):
-        cnt = sum(
+        if cnt := sum(
             1
             for i in params["switches"]
             if i["outlet"] in self.channels and i["switch"] == "on"
-        )
-        if cnt:
+        ):
             # if at least something is on - remember the new brightness
             self._attr_brightness = round(cnt / len(self.channels) * 255)
             self._attr_is_on = True
@@ -1011,14 +996,12 @@ class XDiffuserLight(XEntity, LightEntity):
             params["lightbright"] = conv(brightness, 1, 255, 0, 100)
 
         if rgb_color is not None:
-            params.update(
-                {
-                    "lightmode": 2,
-                    "lightRcolor": rgb_color[0],
-                    "lightGcolor": rgb_color[1],
-                    "lightBcolor": rgb_color[2],
-                }
-            )
+            params |= {
+                "lightmode": 2,
+                "lightRcolor": rgb_color[0],
+                "lightGcolor": rgb_color[1],
+                "lightBcolor": rgb_color[2],
+            }
 
         if not params:
             params["lightswitch"] = 1

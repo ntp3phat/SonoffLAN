@@ -45,15 +45,14 @@ class XFan(XEntity, FanEntity):
                 mode = SPEED_MEDIUM
             elif s[2] == "off" and s[3] == "on":
                 mode = SPEED_HIGH
-        else:
-            if params["fan"] == "off":
-                pass
-            elif params["speed"] == 1:
-                mode = SPEED_LOW
-            elif params["speed"] == 2:
-                mode = SPEED_MEDIUM
-            elif params["speed"] == 3:
-                mode = SPEED_HIGH
+        elif params["fan"] == "off":
+            pass
+        elif params["speed"] == 1:
+            mode = SPEED_LOW
+        elif params["speed"] == 2:
+            mode = SPEED_MEDIUM
+        elif params["speed"] == 3:
+            mode = SPEED_HIGH
 
         self._attr_percentage = int(
             self._attr_preset_modes.index(mode or SPEED_OFF)
@@ -148,14 +147,12 @@ class XFanDualR3(XFan):
             self._attr_preset_mode = SPEED_HIGH
 
     async def async_set_percentage(self, percentage: int):
-        if percentage is None:
+        if percentage is None or percentage <= 50 and percentage <= 0:
             param = {"motorTurn": 0}
         elif percentage > 50:
             param = {"motorTurn": 2}
-        elif percentage > 0:
-            param = {"motorTurn": 1}
         else:
-            param = {"motorTurn": 0}
+            param = {"motorTurn": 1}
         await self.ewelink.send(self.device, param)
 
 
